@@ -1,0 +1,11 @@
+import { MapView } from "../components/map";
+
+function HomePage() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen py-2">
+      <MapView />
+    </div>
+  );
+}
+
+export default HomePage;
