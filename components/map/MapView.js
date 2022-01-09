@@ -33,7 +33,7 @@ export default function MapView() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [lat, setLat] = useState(DEFAULT_LAT);
   const [long, setLong] = useState(DEFAULT_LONG);
-  const [zoom, setZoom] = useState(15);
+  const [zoom, setZoom] = useState(16);
 
   useEffect(() => {
     // initialize map only once
@@ -55,6 +55,10 @@ export default function MapView() {
     // wait for map to initialize
     if (map.current) {
       map.current.on("move", () => {
+        console.log({
+          currentLat: map.current.getCenter().lat.toFixed(4),
+          currentLong: map.current.getCenter().lng.toFixed(4),
+        });
         setLong(map.current.getCenter().lng.toFixed(4));
         setLat(map.current.getCenter().lat.toFixed(4));
         setZoom(map.current.getZoom().toFixed(2));
@@ -76,7 +80,7 @@ export default function MapView() {
   const updatePower = async () => {
     updateCurrentLat(dispatch, lat);
     updateCurrentLong(dispatch, long);
-    if (drawControls) {
+    if (drawControls && drawControls.getAll) {
       calculateArea(drawControls.getAll());
     }
   };
