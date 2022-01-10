@@ -13,6 +13,7 @@ describe("powerCalculator", () => {
           solarPanelYield: 4,
           performanceRatio: 4,
           averageAnnualSolarRadiation: 4,
+          q,
         })
       ).toBe(4 * 4 * 4 * 4);
     });
