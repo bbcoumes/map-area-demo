@@ -1,19 +1,13 @@
 import mapboxgl from "!mapbox-gl";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
-import React, { useRef, useEffect, useState, useReducer } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { area } from "@turf/turf";
-import {
-  updateArea,
-  updateCurrentLat,
-  updateCurrentLong,
-  updateNominalPower,
-} from "./Actions";
 import {
   MAPBOX_PUBLIC_KEY_TOKEN,
   DEFAULT_LONG,
   DEFAULT_LAT,
 } from "./constants";
-import { initialState, reducer } from "./Reducer";
+import retrieveAverageAnnualSolarRadiation from "./api";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 
@@ -30,10 +24,11 @@ export default function MapView() {
       trash: true,
     },
   });
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const [lat, setLat] = useState(DEFAULT_LAT);
-  const [long, setLong] = useState(DEFAULT_LONG);
+  const [lattitude, setLat] = useState(DEFAULT_LAT);
+  const [longitude, setLong] = useState(DEFAULT_LONG);
   const [zoom, setZoom] = useState(16);
+  const [nominalPower, setNominalPower] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // initialize map only once
@@ -41,7 +36,7 @@ export default function MapView() {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/streets-v11",
-        center: [long, lat],
+        center: [longitude, lattitude],
         zoom: zoom,
       });
       map.current.addControl(drawControls);
@@ -55,10 +50,6 @@ export default function MapView() {
     // wait for map to initialize
     if (map.current) {
       map.current.on("move", () => {
-        console.log({
-          currentLat: map.current.getCenter().lat.toFixed(4),
-          currentLong: map.current.getCenter().lng.toFixed(4),
-        });
         setLong(map.current.getCenter().lng.toFixed(4));
         setLat(map.current.getCenter().lat.toFixed(4));
         setZoom(map.current.getZoom().toFixed(2));
@@ -77,32 +68,41 @@ export default function MapView() {
     }
   });
 
-  const updatePower = async () => {
-    updateCurrentLat(dispatch, lat);
-    updateCurrentLong(dispatch, long);
+  const updatePower = () => {
     if (drawControls && drawControls.getAll) {
-      calculateArea(drawControls.getAll());
+      calculateNominalPower(drawControls.getAll());
     }
   };
 
   const resetPower = () => {
-    updateArea(dispatch, 0);
-    updateNominalPower(dispatch, 0);
+    setNominalPower(0);
   };
 
   //taken from https://docs.mapbox.com/mapbox-gl-js/example/mapbox-gl-draw/
-  const calculateArea = data => {
+  const calculateNominalPower = async data => {
     if (data && data.features.length > 0) {
       const areaInSquareKiloMeters = area(data);
-      updateArea(dispatch, areaInSquareKiloMeters);
+      setLoading(true);
+      const annualAverageSolarRaditationOnSolarPanels = await retrieveAverageAnnualSolarRadiation(
+        {
+          lattitude,
+          longitude,
+          solarPanelArea: areaInSquareKiloMeters,
+        }
+      );
+      setLoading(false);
+      setNominalPower(annualAverageSolarRaditationOnSolarPanels);
     }
   };
 
   return (
     <div className="container mx-auto">
       <div ref={mapContainer} className="h-[500px]" />
-      {state.currentArea > 0 && (
-        <div>Calculated Area: {state.currentArea} square meters</div>
+      {loading && <div className="space-y-2">Loading...</div>}
+      {!loading && nominalPower > 0 && (
+        <div className="mt-5 text-lg font-bold">
+          Nominal Power(kWh) of Solar Panel: {nominalPower}
+        </div>
       )}
     </div>
   );

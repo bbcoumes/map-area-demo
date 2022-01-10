@@ -3,8 +3,6 @@ import { ACTIONS } from "./Constants";
 const initialState = {
   currentArea: 0,
   currentNominalPower: 0,
-  currentLat: 0,
-  currentLong: 0,
 };
 
 function reducer(state, action) {
@@ -13,16 +11,6 @@ function reducer(state, action) {
       return {
         ...state,
         currentArea: action.payload,
-      };
-    case ACTIONS.UPDATE_LAT:
-      return {
-        ...state,
-        currentLat: action.payload,
-      };
-    case ACTIONS.UPDATE_LONG:
-      return {
-        ...state,
-        currentLong: action.payload,
       };
     case ACTIONS.UPDATE_POWER:
       return {
